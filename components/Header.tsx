@@ -6,10 +6,9 @@ import { useUI } from '@/lib/state';
 import cn from 'classnames';
 
 export default function Header() {
-  const { toggleSidebar, theme, toggleTheme } = useUI();
+  const { toggleSidebar, theme, toggleTheme, activeTab, setActiveTab } = useUI();
 
   // Dynamic palette that leverages the CSS variables defined for the active theme.
-  // This allows the colors to "cycle" across the header layout (Left -> Right).
   const palette = [
     'var(--accent-blue)',  // Left Section Accent
     'var(--accent-green)', // Right Section Accent
@@ -23,7 +22,7 @@ export default function Header() {
     <header>
       <div className="header-left">
         <h1 className="header-logo-text">
-          Orbits Translator
+          Orbits
           <span 
             className="accent-dot" 
             style={{ 
@@ -34,6 +33,42 @@ export default function Header() {
             .
           </span>
         </h1>
+        <nav className="header-tabs" style={{marginLeft: '2rem', display: 'flex', gap: '1rem'}}>
+          <button 
+            className={cn('tab-button', { active: activeTab === 'translator' })}
+            onClick={() => setActiveTab('translator')}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '99px',
+              backgroundColor: activeTab === 'translator' ? 'var(--bg-panel-secondary)' : 'transparent',
+              color: activeTab === 'translator' ? 'var(--text-main)' : 'var(--text-secondary)',
+              fontWeight: activeTab === 'translator' ? 700 : 400,
+              fontSize: '0.9rem',
+              transition: 'all 0.2s'
+            }}
+          >
+            Translator
+          </button>
+          <button 
+            className={cn('tab-button', { active: activeTab === 'broadcaster' })}
+            onClick={() => setActiveTab('broadcaster')}
+            style={{
+              padding: '0.5rem 1rem',
+              borderRadius: '99px',
+              backgroundColor: activeTab === 'broadcaster' ? 'var(--bg-panel-secondary)' : 'transparent',
+              color: activeTab === 'broadcaster' ? 'var(--text-main)' : 'var(--text-secondary)',
+              fontWeight: activeTab === 'broadcaster' ? 700 : 400,
+              fontSize: '0.9rem',
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <span className="material-symbols-outlined" style={{fontSize: '16px', color: 'var(--accent-red)'}}>sensors</span>
+            Broadcaster
+          </button>
+        </nav>
       </div>
       <div className="header-right">
         <button 

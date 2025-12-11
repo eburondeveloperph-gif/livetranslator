@@ -13,6 +13,7 @@ import {
 export type Template = 'eburon-tts';
 export type Theme = 'light' | 'dark';
 export type VoiceStyle = 'natural' | 'conversational' | 'formal' | 'enthusiastic' | 'breathy' | 'dramatic';
+export type AppTab = 'translator' | 'broadcaster';
 
 const generateSystemPrompt = (language: string, speed: number = 1.0, style: VoiceStyle = 'natural') => {
   let speedInstruction = "PACE: Natural, conversational speed.";
@@ -116,6 +117,29 @@ PERFORM THE TRANSLATION NOW.
 `;
 };
 
+export const BROADCASTER_SYSTEM_PROMPT = `
+SYSTEM MODE: VERBATIM TRANSCRIPTION & SPEAKER DIARIZATION.
+Role: You are an expert automated stenographer.
+
+OBJECTIVE:
+Listen to the audio stream and transcribe it VERBATIM into text.
+
+RULES:
+1. **Speaker Identification**: You must attempt to identify distinct speakers based on voice characteristics.
+   - Use tags: "Male 1:", "Male 2:", "Female 1:", "Female 2:" at the start of turns.
+   - If unsure, use "Speaker:".
+2. **Formatting**:
+   - Separate distinct turns with new lines (Paragraphs).
+   - Do not add Markdown blocks or JSON. Just plain text with Speaker tags.
+3. **Accuracy**: Transcribe exactly what is said. Do not summarize. Do not translate (unless the speaker is translating). Keep the original language of the audio.
+4. **No Chat**: Do not reply to the user. Do not say "I can hear you". JUST TRANSCRIBE.
+
+Example Output:
+Male 1: Hello everyone, welcome to the broadcast.
+Female 1: Thank you for having me. It's great to be here.
+Male 1: Let's get started with the agenda.
+`;
+
 /**
  * Settings
  */
@@ -170,13 +194,17 @@ export const useSettings = create<{
 export const useUI = create<{
   isSidebarOpen: boolean;
   theme: Theme;
+  activeTab: AppTab;
   toggleSidebar: () => void;
   toggleTheme: () => void;
+  setActiveTab: (tab: AppTab) => void;
 }>(set => ({
   isSidebarOpen: false, // Default closed on mobile-first approach
   theme: 'dark',
+  activeTab: 'translator',
   toggleSidebar: () => set(state => ({ isSidebarOpen: !state.isSidebarOpen })),
   toggleTheme: () => set(state => ({ theme: state.theme === 'light' ? 'dark' : 'light' })),
+  setActiveTab: (tab) => set({ activeTab: tab }),
 }));
 
 /**

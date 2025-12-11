@@ -232,14 +232,20 @@ export function useLiveApi({
       }
     });
 
-    // Connect ALL clients
-    await Promise.all([
-      client.connect(config),
-      male1.connect(getSpeakerConfig(SPEAKER_VOICE_MAP['Male 1'])),
-      male2.connect(getSpeakerConfig(SPEAKER_VOICE_MAP['Male 2'])),
-      female1.connect(getSpeakerConfig(SPEAKER_VOICE_MAP['Female 1'])),
-      female2.connect(getSpeakerConfig(SPEAKER_VOICE_MAP['Female 2'])),
-    ]);
+    const connectionPromises = [client.connect(config)];
+
+    // Only connect speaker clients if we are using Audio modality
+    // This prevents "Cannot extract voices from a non-audio request" error when in Text-only Broadcaster mode
+    if (config.responseModalities?.includes(Modality.AUDIO) || config.responseModalities?.includes('AUDIO' as any)) {
+      connectionPromises.push(
+        male1.connect(getSpeakerConfig(SPEAKER_VOICE_MAP['Male 1'])),
+        male2.connect(getSpeakerConfig(SPEAKER_VOICE_MAP['Male 2'])),
+        female1.connect(getSpeakerConfig(SPEAKER_VOICE_MAP['Female 1'])),
+        female2.connect(getSpeakerConfig(SPEAKER_VOICE_MAP['Female 2']))
+      );
+    }
+
+    await Promise.all(connectionPromises);
 
   }, [client, male1, male2, female1, female2, config, backgroundPadEnabled, backgroundPadVolume]);
 

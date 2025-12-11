@@ -22,6 +22,7 @@ import ControlTray from './components/console/control-tray/ControlTray';
 import ErrorScreen from './components/demo/ErrorScreen';
 import StreamingConsole from './components/demo/streaming-console/StreamingConsole';
 import BottomVisualizer from './components/visualizer/BottomVisualizer';
+import Broadcaster from './components/broadcaster/Broadcaster';
 
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
@@ -41,26 +42,36 @@ if (typeof API_KEY !== 'string') {
  * Manages video streaming state and provides controls for webcam/screen capture.
  */
 function App() {
-  const { theme } = useUI();
+  const { theme, activeTab } = useUI();
   
   return (
     <div className="App" data-theme={theme}>
       <LiveAPIProvider apiKey={API_KEY}>
-        <DatabaseBridge />
         <ErrorScreen />
         <Header />
-        <Sidebar />
-        <div className="streaming-console">
-          <main>
-            <div className="main-app-area">
-              <StreamingConsole />
-
+        
+        {activeTab === 'translator' ? (
+          <>
+            <DatabaseBridge />
+            <Sidebar />
+            <div className="streaming-console">
+              <main>
+                <div className="main-app-area">
+                  <StreamingConsole />
+                </div>
+                <ControlTray></ControlTray>
+                <BottomVisualizer />
+              </main>
             </div>
-
-            <ControlTray></ControlTray>
-            <BottomVisualizer />
-          </main>
-        </div>
+          </>
+        ) : (
+          <div className="streaming-console">
+             <main>
+               <Broadcaster />
+             </main>
+          </div>
+        )}
+        
       </LiveAPIProvider>
     </div>
   );
