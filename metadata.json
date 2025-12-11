@@ -2,6 +2,7 @@
   "name": "livetranslator",
   "description": "livetranslator",
   "requestFramePermissions": [
-    "microphone"
+    "microphone",
+    "display-capture"
   ]
 }

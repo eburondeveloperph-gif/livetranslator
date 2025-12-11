@@ -128,8 +128,17 @@ export default function Broadcaster() {
             stream.getVideoTracks()[0].onended = () => {
               stopBroadcast();
             };
-          } catch (err) {
+          } catch (err: any) {
             console.error("Error getting display media:", err);
+            if (err.name === 'NotAllowedError') {
+              // User cancelled
+              return;
+            }
+            if (err.toString().includes('permissions policy')) {
+               alert("Error: Screen sharing is disabled in this environment. Please ensure 'display-capture' permission is allowed.");
+            } else {
+               alert("Failed to start screen sharing: " + err.message);
+            }
             return; // Cancelled or failed
           }
         }
