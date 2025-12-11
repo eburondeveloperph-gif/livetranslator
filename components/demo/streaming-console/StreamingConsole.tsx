@@ -73,7 +73,9 @@ export default function StreamingConsole() {
   const { systemPrompt, voice } = useSettings();
   const { tools } = useTools();
   const turns = useLogStore(state => state.turns);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // Anchor for auto-scrolling
+  const bottomAnchorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const config: LiveConnectConfig = {
@@ -131,20 +133,15 @@ export default function StreamingConsole() {
     };
   }, [client]);
 
-  // Scroll to bottom when turns change
-  useEffect(() => {
-    if (scrollRef.current) {
-      const scrollElement = scrollRef.current;
-      // Use smooth scroll behavior
-      scrollElement.scrollTo({
-        top: scrollElement.scrollHeight,
-        behavior: 'smooth'
-      });
-    }
-  }, [turns]);
-
   // Filter: Only show "system" turns which contain our Script
   const scriptTurns = turns.filter(t => t.role === 'system');
+
+  // Auto-scroll to bottom whenever turns update
+  useEffect(() => {
+    if (bottomAnchorRef.current) {
+      bottomAnchorRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [turns, scriptTurns.length]);
 
   return (
     <div className="streaming-console-layout">
@@ -160,12 +157,13 @@ export default function StreamingConsole() {
           </div>
         ) : (
           <div className="console-box videoke-mode">
-            <div className="transcription-view subtitle-mode" ref={scrollRef}>
+            <div className="transcription-view subtitle-mode">
               {scriptTurns.map((t, i) => (
                 <div key={t.id || i} className="subtitle-wrapper">
                   <SubtitleText text={t.text} translation={t.translation} speaker={t.speaker} />
                 </div>
               ))}
+              <div ref={bottomAnchorRef} style={{height: 1, minHeight: 1}} />
             </div>
           </div>
         )}
