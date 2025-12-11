@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import { useEffect, useRef, useState, memo } from 'react';
+import { useEffect, useRef, useState, memo, useCallback } from 'react';
 import { useLiveAPIContext } from '../../contexts/LiveAPIContext';
 import { BROADCASTER_SYSTEM_PROMPT } from '@/lib/state';
 import { LiveConnectConfig, Modality } from '@google/genai';
@@ -19,12 +19,15 @@ function debounce(func: Function, wait: number) {
   };
 }
 
+type AudioSource = 'microphone' | 'screen_tab';
+
 export default function Broadcaster() {
   const { client, connect, disconnect, connected, setConfig } = useLiveAPIContext();
   const [isRecording, setIsRecording] = useState(false);
   const [micVolume, setMicVolume] = useState(0);
   const [transcript, setTranscript] = useState<string>('');
   const [sessionId, setSessionId] = useState<string>('');
+  const [audioSource, setAudioSource] = useState<AudioSource>('microphone');
   
   // Refs for data persistence across renders
   const recorderRef = useRef<AudioRecorder | null>(null);
@@ -46,32 +49,19 @@ export default function Broadcaster() {
       if (!sid || !fullText) return;
       
       try {
-        // Upsert logic for transcripts table
         const { error } = await supabase.from('transcripts').upsert({
           session_id: sid,
-          user_id: 'broadcaster-user', // Placeholder, ideally from auth
+          user_id: 'broadcaster-user', 
           full_transcript_text: fullText,
           updated_at: new Date().toISOString(),
-          // Use a dummy ID or handle conflict if ID is missing. 
-          // Assuming session_id is unique enough or we let PG gen ID on first insert.
-          // For UPSERT on ID, we need the ID. 
-          // Let's try to fetch ID first or rely on session_id if we had a unique constraint.
-          // Given the schema provided: "primary key (id)", and "index on session_id". 
-          // We'll verify if a row exists for this session first.
         }, { onConflict: 'id' }).select();
-
-        // Optimized approach: We probably want to Insert once, then Update.
       } catch (e) {
         console.error("DB Save Error", e);
       }
     };
 
-    // Actual Implementation with Debounce
     const debouncedSave = debounce(async (text: string) => {
-       // Since the schema uses ID as PK, we need to know the ID to update.
-       // Strategy: Attempt UPDATE by session_id. If 0 rows, INSERT.
        const sid = sessionIdRef.current;
-       
        const { data } = await supabase.from('transcripts').select('id').eq('session_id', sid).single();
        
        if (data?.id) {
@@ -87,7 +77,7 @@ export default function Broadcaster() {
            source_language: 'auto'
          });
        }
-    }, 2000); // Save every 2 seconds
+    }, 2000); 
 
     dbUpdateRef.current = debouncedSave;
   }, []);
@@ -95,46 +85,80 @@ export default function Broadcaster() {
   // Setup Gemini Config for Broadcaster Mode
   useEffect(() => {
     const config: LiveConnectConfig = {
-      responseModalities: [Modality.TEXT], // We want TEXT back
+      responseModalities: [Modality.TEXT],
       systemInstruction: { parts: [{ text: BROADCASTER_SYSTEM_PROMPT }] },
-      // Note: We deliberately do NOT include speechConfig here.
-      // This is a transcription-only mode.
     };
     setConfig(config);
   }, [setConfig]);
 
+  const stopBroadcast = useCallback(() => {
+    recorderRef.current?.stop();
+    disconnect();
+    setIsRecording(false);
+    setMicVolume(0);
+  }, [disconnect]);
+
   // Handle Recording Logic
   const toggleBroadcast = async () => {
     if (isRecording) {
-      // Stop
-      recorderRef.current?.stop();
-      disconnect();
-      setIsRecording(false);
-      setMicVolume(0);
+      stopBroadcast();
     } else {
-      // Start
-      await connect();
-      setIsRecording(true);
-      
-      const recorder = new AudioRecorder();
-      recorderRef.current = recorder;
-      
-      recorder.on('data', (base64) => {
-        client.sendRealtimeInput([{ mimeType: 'audio/pcm;rate=16000', data: base64 }]);
-      });
-      
-      recorder.on('volume', (vol) => {
-        setMicVolume(vol);
-      });
+      let stream: MediaStream | undefined;
 
-      await recorder.start();
+      try {
+        if (audioSource === 'screen_tab') {
+          try {
+            stream = await navigator.mediaDevices.getDisplayMedia({
+              video: true, // Required to prompt, but we ignore video
+              audio: {
+                echoCancellation: false,
+                noiseSuppression: false,
+                autoGainControl: false
+              } 
+            });
+            
+            // Check if user shared audio
+            if (stream.getAudioTracks().length === 0) {
+              alert("No audio track detected. Please make sure to check 'Share tab audio' in the browser dialog.");
+              stream.getTracks().forEach(t => t.stop());
+              return;
+            }
+
+            // Handle user stopping share via browser UI
+            stream.getVideoTracks()[0].onended = () => {
+              stopBroadcast();
+            };
+          } catch (err) {
+            console.error("Error getting display media:", err);
+            return; // Cancelled or failed
+          }
+        }
+
+        await connect();
+        setIsRecording(true);
+        
+        const recorder = new AudioRecorder();
+        recorderRef.current = recorder;
+        
+        recorder.on('data', (base64) => {
+          client.sendRealtimeInput([{ mimeType: 'audio/pcm;rate=16000', data: base64 }]);
+        });
+        
+        recorder.on('volume', (vol) => {
+          setMicVolume(vol);
+        });
+
+        await recorder.start(stream);
+      } catch (e) {
+        console.error("Failed to start broadcast", e);
+        stopBroadcast();
+      }
     }
   };
 
   // Handle Incoming Text from Gemini
   useEffect(() => {
     const handleContent = (serverContent: any) => {
-      // Logic to extract text from modelTurn
       if (serverContent.modelTurn?.parts) {
         serverContent.modelTurn.parts.forEach((part: any) => {
           if (part.text) {
@@ -142,7 +166,6 @@ export default function Broadcaster() {
              transcriptRef.current += newText;
              setTranscript(transcriptRef.current);
              
-             // Trigger DB save
              if (dbUpdateRef.current) {
                dbUpdateRef.current(transcriptRef.current);
              }
@@ -157,7 +180,6 @@ export default function Broadcaster() {
     };
   }, [client]);
 
-  // Cleanup
   useEffect(() => {
     return () => {
       recorderRef.current?.stop();
@@ -187,6 +209,35 @@ export default function Broadcaster() {
       </div>
 
       <div className="broadcaster-controls">
+        <div className="source-selector">
+          <label>Audio Source</label>
+          <div className="source-options">
+            <button 
+              className={`source-btn ${audioSource === 'microphone' ? 'selected' : ''}`}
+              onClick={() => !isRecording && setAudioSource('microphone')}
+              disabled={isRecording}
+            >
+              <span className="material-symbols-outlined">mic</span>
+              Microphone
+            </button>
+            <button 
+              className={`source-btn ${audioSource === 'screen_tab' ? 'selected' : ''}`}
+              onClick={() => !isRecording && setAudioSource('screen_tab')}
+              disabled={isRecording}
+              title="Share a Chrome Tab (YouTube, Spotify, etc.) or Window"
+            >
+              <span className="material-symbols-outlined">tab</span>
+              System / Tab Audio
+            </button>
+          </div>
+        </div>
+
+        {audioSource === 'screen_tab' && !isRecording && (
+          <div className="hint-text">
+            ℹ️ Select <strong>"Chrome Tab"</strong> and check <strong>"Share Audio"</strong> in the next popup to capture YouTube/Web audio.
+          </div>
+        )}
+
         <div className="mic-visualizer">
            {[...Array(bars)].map((_, i) => (
              <div 

@@ -82,6 +82,67 @@
   padding-bottom: 2rem;
 }
 
+/* Source Selector Styles */
+.source-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.source-selector label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.source-options {
+  display: flex;
+  gap: 1rem;
+  background: var(--bg-panel);
+  padding: 4px;
+  border-radius: 99px;
+  border: 1px solid var(--border-color);
+}
+
+.source-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 1.25rem;
+  border-radius: 99px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.source-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.source-btn:hover:not(:disabled) {
+  background: var(--Neutral-20);
+  color: var(--text-main);
+}
+
+.source-btn.selected {
+  background: var(--bg-panel-secondary);
+  color: var(--accent-blue);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  font-weight: 500;
+}
+
+.hint-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 400px;
+  background: var(--bg-panel-secondary);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
 .mic-visualizer {
   display: flex;
   gap: 4px;

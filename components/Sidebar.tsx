@@ -69,13 +69,13 @@ export default function Sidebar() {
               {dbData ? (
                 <>
                   <div style={{ marginBottom: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase' }}>Current ID: {dbData.id.substring(0, 8)}...</div>
-                    <div style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>{new Date(dbData.updated_at).toLocaleTimeString()}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '10px', textTransform: 'uppercase' }}>Current ID: {dbData.id?.substring(0, 8) || 'Unknown'}...</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>{dbData.updated_at ? new Date(dbData.updated_at).toLocaleTimeString() : ''}</div>
                   </div>
                   <div style={{ marginBottom: '12px' }}>
                      <strong style={{color: 'var(--accent-blue)'}}>Source ({dbData.source_language || '?'}):</strong><br />
                      <div style={{ color: 'var(--text-main)', marginTop: '4px', fontStyle: 'italic', maxHeight: '100px', overflowY: 'auto' }}>
-                       "{dbData.full_transcript_text?.substring(0, 200)}{dbData.full_transcript_text?.length > 200 ? '...' : ''}"
+                       "{dbData.full_transcript_text?.substring(0, 200) || ''}{(dbData.full_transcript_text?.length || 0) > 200 ? '...' : ''}"
                      </div>
                   </div>
                   <div>

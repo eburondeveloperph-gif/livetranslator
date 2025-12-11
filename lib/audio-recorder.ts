@@ -32,14 +32,18 @@ export class AudioRecorder {
     this.emitter.emit(event, ...args);
   }
 
-  async start() {
+  async start(stream?: MediaStream) {
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { 
-          channelCount: 1,
-          sampleRate: this.targetSampleRate 
-        } 
-      });
+      if (stream) {
+        this.stream = stream;
+      } else {
+        this.stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: { 
+            channelCount: 1,
+            sampleRate: this.targetSampleRate 
+          } 
+        });
+      }
 
       this.audioContext = new AudioContext({ sampleRate: this.targetSampleRate });
       this.source = this.audioContext.createMediaStreamSource(this.stream);
