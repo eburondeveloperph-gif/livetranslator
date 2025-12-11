@@ -1,0 +1,7 @@
+{
+  "name": "livetranslator",
+  "description": "livetranslator",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
