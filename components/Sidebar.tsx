@@ -7,20 +7,23 @@ import c from 'classnames';
 import { useLiveAPIContext } from '@/contexts/LiveAPIContext';
 import { useEffect, useState } from 'react';
 import { supabase, Transcript } from '@/lib/supabase';
-import { SUPPORTED_LANGUAGES, AVAILABLE_VOICES } from '@/lib/constants';
+import { SUPPORTED_LANGUAGES, AVAILABLE_VOICES, SPEAKER_VOICE_MAP } from '@/lib/constants';
 
 export default function Sidebar() {
   const { isSidebarOpen, toggleSidebar } = useUI();
   const { 
     language, setLanguage, 
     voice, setVoice, 
-    voiceStyle, setVoiceStyle,
+    speakerStyles, setSpeakerStyle,
     speechRate, setSpeechRate,
     backgroundPadEnabled, setBackgroundPadEnabled,
     backgroundPadVolume, setBackgroundPadVolume
   } = useSettings();
   const { connected } = useLiveAPIContext();
   const [dbData, setDbData] = useState<Transcript | null>(null);
+
+  // Detected speakers list
+  const detectedSpeakers = ['Male 1', 'Male 2', 'Female 1', 'Female 2'];
 
   useEffect(() => {
     // Initial fetch
@@ -118,48 +121,28 @@ export default function Sidebar() {
               </div>
 
               <div style={{marginBottom: '1rem'}}>
-                <label style={{display: 'block', marginBottom: '8px', fontSize: '0.85rem'}}>Voice Model</label>
-                <select
-                  value={voice}
-                  onChange={e => setVoice(e.target.value)}
-                  style={{
-                    appearance: 'none',
-                    backgroundImage: `var(--select-arrow)`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 12px center',
-                    backgroundSize: '1em',
-                    paddingRight: '30px'
-                  }}
-                >
-                  {AVAILABLE_VOICES.map(v => (
-                    <option key={v} value={v}>
-                      {v}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{marginBottom: '1rem'}}>
-                <label style={{display: 'block', marginBottom: '8px', fontSize: '0.85rem'}}>Voice Style</label>
-                <select
-                  value={voiceStyle}
-                  onChange={e => setVoiceStyle(e.target.value as VoiceStyle)}
-                  style={{
-                    appearance: 'none',
-                    backgroundImage: `var(--select-arrow)`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 12px center',
-                    backgroundSize: '1em',
-                    paddingRight: '30px'
-                  }}
-                >
-                  <option value="conversational">Conversational</option>
-                  <option value="formal">Formal</option>
-                  <option value="enthusiastic">Enthusiastic</option>
-                  <option value="natural">Natural</option>
-                  <option value="breathy">Breathy</option>
-                  <option value="dramatic">Dramatic</option>
-                </select>
+                 <label style={{display: 'block', marginBottom: '8px', fontSize: '0.85rem'}}>Default Voice Model</label>
+                  <select
+                    value={voice}
+                    onChange={e => setVoice(e.target.value)}
+                    style={{
+                      appearance: 'none',
+                      backgroundImage: `var(--select-arrow)`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '1em',
+                      paddingRight: '30px'
+                    }}
+                  >
+                    {AVAILABLE_VOICES.map(v => (
+                      <option key={v} value={v}>
+                        {v}
+                      </option>
+                    ))}
+                  </select>
+                  <div style={{fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px'}}>
+                    Used for unassigned speakers or system messages.
+                  </div>
               </div>
 
               <div>
@@ -179,11 +162,54 @@ export default function Sidebar() {
                    <span>Fast</span>
                  </div>
               </div>
-
-              <div style={{marginTop: '20px', padding: '12px', background: 'var(--bg-panel-secondary)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-secondary)', fontStyle: 'italic'}}>
-                 System Prompt is managed automatically by Eburon Controller based on selected language and style.
-              </div>
             </fieldset>
+          </div>
+
+          <div className="sidebar-section">
+            <h4 className="sidebar-section-title">Speaker Styles</h4>
+            <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+              {detectedSpeakers.map((speakerKey) => (
+                <div key={speakerKey} style={{
+                    background: 'var(--bg-panel-secondary)', 
+                    padding: '8px 12px', 
+                    borderRadius: '8px',
+                    borderLeft: `3px solid ${
+                       speakerKey.includes('Male 1') ? '#8ecae6' :
+                       speakerKey.includes('Male 2') ? '#90be6d' :
+                       speakerKey.includes('Female 1') ? '#ffb7b2' : '#f9c74f'
+                    }`
+                  }}>
+                  <label style={{display: 'block', marginBottom: '6px', fontSize: '0.8rem', fontWeight: 600}}>
+                    {speakerKey} ({SPEAKER_VOICE_MAP[speakerKey] || 'Default'})
+                  </label>
+                  <select
+                    disabled={connected}
+                    value={speakerStyles[speakerKey] || 'conversational'}
+                    onChange={e => setSpeakerStyle(speakerKey, e.target.value as VoiceStyle)}
+                    style={{
+                      appearance: 'none',
+                      backgroundImage: `var(--select-arrow)`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 12px center',
+                      backgroundSize: '1em',
+                      paddingRight: '30px',
+                      fontSize: '0.85rem',
+                      padding: '6px 12px'
+                    }}
+                  >
+                    <option value="conversational">Conversational</option>
+                    <option value="formal">Formal</option>
+                    <option value="enthusiastic">Enthusiastic</option>
+                    <option value="natural">Natural</option>
+                    <option value="breathy">Breathy</option>
+                    <option value="dramatic">Dramatic</option>
+                  </select>
+                </div>
+              ))}
+            </div>
+            <div style={{marginTop: '12px', fontSize: '11px', color: 'var(--text-secondary)', fontStyle: 'italic'}}>
+               Styles are applied dynamically to each speaker's turn.
+            </div>
           </div>
 
           <div className="sidebar-section">

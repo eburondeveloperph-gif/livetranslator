@@ -15,7 +15,7 @@ export type Theme = 'light' | 'dark';
 export type VoiceStyle = 'natural' | 'conversational' | 'formal' | 'enthusiastic' | 'breathy' | 'dramatic';
 export type AppTab = 'translator' | 'broadcaster';
 
-const generateSystemPrompt = (language: string, speed: number = 1.0, style: VoiceStyle = 'natural') => {
+const generateSystemPrompt = (language: string, speed: number = 1.0) => {
   let speedInstruction = "PACE: Natural, conversational speed.";
   if (speed < 1.0) {
     speedInstruction = `PACE: Slower than normal (${speed}x). Enunciate clearly and take your time.`;
@@ -23,60 +23,14 @@ const generateSystemPrompt = (language: string, speed: number = 1.0, style: Voic
     speedInstruction = `PACE: Faster than normal (${speed}x). Speak quickly and efficiently.`;
   }
 
-  let personaInstruction = "";
-  switch (style) {
-    case 'formal':
-      personaInstruction = `
-VOICE PERSONA (The Professional Anchor):
-- **Tone**: Objective, precise, clear, and composed.
-- **Diction**: Crisp articulation, avoiding slang or fillers.
-- **Rhythm**: Steady, even-paced, and authoritative.
-- **Attitude**: Professional, trustworthy, informative.
-`;
-      break;
-    case 'enthusiastic':
-      personaInstruction = `
-VOICE PERSONA (The Energetic Host):
-- **Tone**: Bright, high-energy, eager, and smiling.
-- **Dynamics**: Varied pitch to express excitement and positivity.
-- **Rhythm**: Upbeat and slightly faster, with punchy emphasis.
-- **Attitude**: Cheerful, motivating, engaging.
-`;
-      break;
-    case 'breathy':
-      personaInstruction = `
-VOICE PERSONA (The Intimate Storyteller):
-- **Tone**: Soft, airy, close-to-mic, and confidential.
-- **Dynamics**: Gentle whispers to soft speaking.
-- **Attitude**: Calm, soothing, mysterious.
-`;
-      break;
-    case 'dramatic':
-      personaInstruction = `
-VOICE PERSONA (The Movie Trailer Voice):
-- **Tone**: Deep, gravelly, epic, and suspenseful.
-- **Rhythm**: Slow, deliberate, with heavy pauses for effect.
-- **Attitude**: Serious, intense, cinematic.
-`;
-      break;
-    case 'conversational':
-      personaInstruction = `
-VOICE PERSONA (The Friendly Peer):
-- **Tone**: Warm, approachable, casual, and relaxed.
-- **Rhythm**: Natural, with colloquial phrasing and comfortable pauses.
-- **Attitude**: Friendly, chatty, relatable.
-`;
-      break;
-    case 'natural':
-    default:
-      personaInstruction = `
-VOICE PERSONA (The Balanced Speaker):
-- **Tone**: Clear, neutral but engaging, and human-like.
-- **Rhythm**: Standard conversational pace with natural breathing.
+  // Versatile persona that can adapt to the tags injected by DatabaseBridge
+  const personaInstruction = `
+VOICE PERSONA (The Versatile Voice Actor):
+- **Core Tone**: Clear, neutral but engaging, and human-like.
+- **Adaptability**: You must instantly shift tone, rhythm, and projection based on the (style tags) in the input.
+- **Rhythm**: Standard conversational pace with natural breathing unless instructed otherwise.
 - **Attitude**: Helpful, polite, present.
 `;
-      break;
-  }
 
   return `
 SYSTEM MODE: STRICT TEXT-TO-SPEECH (TTS) ENGINE.
@@ -86,7 +40,7 @@ ${speedInstruction}
 
 ⛔️ AUDIO STYLE TAGS PROTOCOL (CRITICAL):
 1. The input text contains audio style tags enclosed in parentheses (...).
-   Examples: (excitedly), (soft inhale), (pause), (clears throat), (slowly).
+   Examples: (excitedly), (soft inhale), (pause), (clears throat), (slowly), (professionally).
 2. **THESE ARE SILENT INSTRUCTIONS FOR THE ACTOR.**
 3. **NEVER READ THE TAGS ALOUD.** 
    - Incorrect: "Excitedly, hello there."
@@ -147,7 +101,7 @@ export const useSettings = create<{
   systemPrompt: string;
   model: string;
   voice: string;
-  voiceStyle: VoiceStyle;
+  speakerStyles: Record<string, VoiceStyle>;
   language: string;
   speechRate: number;
   backgroundPadEnabled: boolean;
@@ -155,7 +109,7 @@ export const useSettings = create<{
   setSystemPrompt: (prompt: string) => void;
   setModel: (model: string) => void;
   setVoice: (voice: string) => void;
-  setVoiceStyle: (style: VoiceStyle) => void;
+  setSpeakerStyle: (speaker: string, style: VoiceStyle) => void;
   setLanguage: (language: string) => void;
   setSpeechRate: (rate: number) => void;
   setBackgroundPadEnabled: (enabled: boolean) => void;
@@ -163,8 +117,14 @@ export const useSettings = create<{
 }>(set => ({
   language: 'Taglish (Philippines)',
   speechRate: 1.0,
-  voiceStyle: 'conversational',
-  systemPrompt: generateSystemPrompt('Taglish (Philippines)', 1.0, 'conversational'),
+  speakerStyles: {
+    'default': 'conversational',
+    'Male 1': 'conversational',
+    'Male 2': 'conversational',
+    'Female 1': 'conversational',
+    'Female 2': 'conversational',
+  },
+  systemPrompt: generateSystemPrompt('Taglish (Philippines)', 1.0),
   model: DEFAULT_LIVE_API_MODEL,
   voice: DEFAULT_VOICE,
   backgroundPadEnabled: false,
@@ -172,17 +132,17 @@ export const useSettings = create<{
   setSystemPrompt: prompt => set({ systemPrompt: prompt }),
   setModel: model => set({ model }),
   setVoice: voice => set({ voice }),
-  setVoiceStyle: voiceStyle => set(state => ({ 
-    voiceStyle,
-    systemPrompt: generateSystemPrompt(state.language, state.speechRate, voiceStyle)
+  setSpeakerStyle: (speaker, style) => set(state => ({ 
+    speakerStyles: { ...state.speakerStyles, [speaker]: style }
+    // We don't regenerate system prompt for style changes anymore; styles are applied via tags in bridge.
   })),
   setLanguage: language => set(state => ({ 
     language, 
-    systemPrompt: generateSystemPrompt(language, state.speechRate, state.voiceStyle) 
+    systemPrompt: generateSystemPrompt(language, state.speechRate) 
   })),
   setSpeechRate: rate => set(state => ({ 
     speechRate: rate, 
-    systemPrompt: generateSystemPrompt(state.language, rate, state.voiceStyle) 
+    systemPrompt: generateSystemPrompt(state.language, rate) 
   })),
   setBackgroundPadEnabled: enabled => set({ backgroundPadEnabled: enabled }),
   setBackgroundPadVolume: volume => set({ backgroundPadVolume: volume }),

@@ -31,12 +31,12 @@ type QueueItem = {
 export default function DatabaseBridge() {
   const { client, connected, getAudioStreamerState, sendToSpeaker, addOutputListener } = useLiveAPIContext();
   const { addTurn, updateTurn } = useLogStore();
-  const { voiceStyle, speechRate, language } = useSettings();
+  const { speakerStyles, speechRate, language } = useSettings();
   
   const lastProcessedIdRef = useRef<string | null>(null);
   const paragraphCountRef = useRef<number>(0);
   
-  const voiceStyleRef = useRef(voiceStyle);
+  const speakerStylesRef = useRef(speakerStyles);
   const speechRateRef = useRef(speechRate);
   const languageRef = useRef(language);
 
@@ -47,8 +47,8 @@ export default function DatabaseBridge() {
   const currentTranslationBufferRef = useRef<string>('');
 
   useEffect(() => {
-    voiceStyleRef.current = voiceStyle;
-  }, [voiceStyle]);
+    speakerStylesRef.current = speakerStyles;
+  }, [speakerStyles]);
 
   useEffect(() => {
     speechRateRef.current = speechRate;
@@ -122,7 +122,9 @@ export default function DatabaseBridge() {
              textToSend = rawText.replace('Female 2:', '').trim();
           }
           
-          const style = voiceStyleRef.current;
+          // Look up the style specific to this speaker
+          const style = speakerStylesRef.current[targetSpeaker] || speakerStylesRef.current['default'] || 'natural';
+          
           let scriptedText = textToSend;
           
           // Apply Voice Style only to non-command text
