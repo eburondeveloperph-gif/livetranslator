@@ -18,12 +18,22 @@ const SubtitleText = memo(({ text, translation, speaker }: { text: string, trans
   const showSpeaker = speaker && speaker !== 'default';
   const label = showSpeaker ? speaker : 'System';
 
+  // Determine icon based on speaker name
+  let iconName = 'graphic_eq';
+  if (label?.toLowerCase().includes('male')) iconName = 'face';
+  if (label?.toLowerCase().includes('female')) iconName = 'face_3';
+
   return (
     <div className={`subtitle-card ${speakerClass}`}>
       <div className="card-header">
-        <span className="speaker-badge">
-          {label}
-        </span>
+        <div className="speaker-info">
+          <span className="material-symbols-outlined speaker-icon">
+            {iconName}
+          </span>
+          <span className="speaker-badge">
+            {label}
+          </span>
+        </div>
       </div>
       <div className="card-content">
         <div className="subtitle-translation">
