@@ -143,7 +143,13 @@ export default function Broadcaster() {
           }
         }
 
-        await connect();
+        // Check for connection success
+        const success = await connect();
+        if (!success) {
+           console.error("Connection failed. Aborting broadcast.");
+           return;
+        }
+
         setIsRecording(true);
         
         const recorder = new AudioRecorder();

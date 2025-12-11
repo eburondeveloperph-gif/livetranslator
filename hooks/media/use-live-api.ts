@@ -32,7 +32,7 @@ export type UseLiveApiResults = {
   setConfig: (config: LiveConnectConfig) => void;
   config: LiveConnectConfig;
 
-  connect: () => Promise<void>;
+  connect: () => Promise<boolean>;
   disconnect: () => void;
   connected: boolean;
 
@@ -234,9 +234,13 @@ export function useLiveApi({
 
     const connectionPromises = [client.connect(config)];
 
+    // Strictly check if AUDIO modality is present.
+    // We check for both string 'AUDIO' and enum Modality.AUDIO to be safe.
+    const hasAudio = config.responseModalities?.some(m => m === 'AUDIO' || m === Modality.AUDIO);
+
     // Only connect speaker clients if we are using Audio modality
     // This prevents "Cannot extract voices from a non-audio request" error when in Text-only Broadcaster mode
-    if (config.responseModalities?.includes(Modality.AUDIO) || config.responseModalities?.includes('AUDIO' as any)) {
+    if (hasAudio) {
       connectionPromises.push(
         male1.connect(getSpeakerConfig(SPEAKER_VOICE_MAP['Male 1'])),
         male2.connect(getSpeakerConfig(SPEAKER_VOICE_MAP['Male 2'])),
@@ -245,7 +249,10 @@ export function useLiveApi({
       );
     }
 
-    await Promise.all(connectionPromises);
+    const results = await Promise.all(connectionPromises);
+    
+    // Return true if main client connected successfully
+    return results[0];
 
   }, [client, male1, male2, female1, female2, config, backgroundPadEnabled, backgroundPadVolume]);
 
