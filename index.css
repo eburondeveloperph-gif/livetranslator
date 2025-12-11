@@ -222,86 +222,146 @@ header .header-right {
 
 /* Videoke / Subtitle Mode Styles */
 .console-box.videoke-mode {
-  background: black; /* High contrast */
+  background: transparent;
   border: none;
+  box-shadow: none;
 }
 
 .transcription-view.subtitle-mode {
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  padding: 2rem;
+  padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 1.5rem;
   scroll-behavior: smooth;
   padding-bottom: 25vh; /* Allow centering last item */
 }
 
 .subtitle-wrapper {
-  text-align: center;
-  animation: fadeIn 0.5s ease-out;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  animation: fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.subtitle-entry {
+/* PREMIUM CARD COMPONENT */
+.subtitle-card {
+  background: var(--bg-panel); /* Fallback */
+  background: rgba(28, 31, 33, 0.65); /* Dark Glass */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 700px;
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.75rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.subtitle-source {
-  font-size: 1.2rem;
+[data-theme='light'] .subtitle-card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+}
+
+/* Accent Borders based on Speaker */
+.subtitle-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--text-secondary);
+  opacity: 0.8;
+}
+
+.subtitle-card.speaker-male-1::before { background: #8ecae6; }
+.subtitle-card.speaker-male-2::before { background: #90be6d; }
+.subtitle-card.speaker-female-1::before { background: #ffb7b2; }
+.subtitle-card.speaker-female-2::before { background: #f9c74f; }
+.subtitle-card.speaker-default::before { background: var(--text-secondary); }
+
+/* Header: Speaker Badge */
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.speaker-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-secondary);
+}
+
+[data-theme='light'] .speaker-badge {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Speaker Colors in Badge Text */
+.speaker-male-1 .speaker-badge { color: #8ecae6; }
+.speaker-male-2 .speaker-badge { color: #90be6d; }
+.speaker-female-1 .speaker-badge { color: #ffb7b2; }
+.speaker-female-2 .speaker-badge { color: #d99a00; } /* Darker yellow for visibility */
+
+.card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Typography */
+.subtitle-source {
+  font-family: 'Google Sans Text', sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  opacity: 0.8;
   font-style: italic;
-  font-weight: 400;
-  opacity: 0.6;
 }
 
 .subtitle-translation {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: var(--text-main);
-  line-height: 1.2;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
   font-family: 'Google Sans Display', sans-serif;
-  letter-spacing: -0.02em;
+  font-size: 1.5rem; /* Large but elegant */
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
 }
 
-/* Speaker Label */
-.speaker-label {
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  margin-bottom: 0.2rem;
-  opacity: 0.9;
+/* Active State Highlighting (Most recent card) */
+.subtitle-wrapper:last-child .subtitle-card {
+  background: rgba(30, 34, 36, 0.85);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: scale(1.02);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
-/* Speaker Colors */
-.speaker-male-1 .subtitle-translation { color: #8ecae6; } /* Light Blue */
-.speaker-male-1 .speaker-label { color: #8ecae6; }
-
-.speaker-male-2 .subtitle-translation { color: #90be6d; } /* Green */
-.speaker-male-2 .speaker-label { color: #90be6d; }
-
-.speaker-female-1 .subtitle-translation { color: #ffb7b2; } /* Melon */
-.speaker-female-1 .speaker-label { color: #ffb7b2; }
-
-.speaker-female-2 .subtitle-translation { color: #f9c74f; } /* Yellow */
-.speaker-female-2 .speaker-label { color: #f9c74f; }
-
-.speaker-default .subtitle-translation { color: #ffffff; }
-
-/* Highlights recent items */
-.subtitle-wrapper:last-child .subtitle-translation {
-  /* Optional glow specific to speaker color could be added here, 
-     but defaulting to standard accent for active state */
-  text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+[data-theme='light'] .subtitle-wrapper:last-child .subtitle-card {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
 }
 
 .typing-indicator {
   display: inline-block;
   opacity: 0.5;
+  font-size: 1rem;
+  font-style: italic;
   animation: pulse 1s infinite;
 }
 

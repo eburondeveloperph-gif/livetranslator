@@ -179,20 +179,33 @@ export default function DatabaseBridge() {
             console.warn("Timeout waiting for audio response from model. Moving to next chunk.");
           }
 
-          // 3. VIDEOKE STYLE OVERLAP: 
-          // Wait until audio is *almost* finished (1s remaining) before starting the NEXT loop iteration.
-          // This allows the next speaker to start processing and playing while this one fades out/finishes.
-          // Note: Since we use separate AudioStreamers for each speaker, they can play concurrently.
+          // 3. VIDEOKE STYLE OVERLAP: Dynamic Wait
+          // We wait until the current audio is *almost* finished before starting the next turn.
+          // This allows masking the latency of the next request.
           
           const playStart = Date.now();
+          let peakDuration = 0;
+
           while (Date.now() - playStart < 60000) {
              const state = getAudioStreamerState(targetSpeaker);
              
-             // If duration is <= 1.0s, we consider it "time to start next".
-             // If the total clip was < 1.0s, this condition is true immediately, resulting in tight sequencing.
-             if (state.duration <= 1.0) {
+             // Track peak duration to distinguish short vs long utterances.
+             // This helps us know if the clip is "short" or "long".
+             if (state.duration > peakDuration) {
+                 peakDuration = state.duration;
+             }
+
+             // Dynamic Threshold Calculation:
+             // - If the utterance is SHORT (< 1.5s), we use a small buffer (0.2s) to avoid 
+             //   trampling short confirmations like "Yes" or "No".
+             // - If the utterance is LONG (>= 1.5s), we use a larger buffer (1.5s) to start
+             //   generating the next turn early, ensuring a smooth cross-fade handover.
+             const threshold = peakDuration < 1.5 ? 0.2 : 1.5;
+             
+             if (state.duration <= threshold) {
                 break;
              }
+             
              await new Promise(resolve => setTimeout(resolve, 100));
           }
 

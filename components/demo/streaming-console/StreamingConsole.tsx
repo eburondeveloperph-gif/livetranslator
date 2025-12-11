@@ -12,23 +12,26 @@ import {
   useTools,
 } from '@/lib/state';
 
-// Component to render the "Videoke" style text
+// Component to render the "Premium Card" style text
 const SubtitleText = memo(({ text, translation, speaker }: { text: string, translation?: string, speaker?: string }) => {
   const speakerClass = speaker ? `speaker-${speaker.toLowerCase().replace(/\s+/g, '-')}` : 'speaker-default';
   const showSpeaker = speaker && speaker !== 'default';
+  const label = showSpeaker ? speaker : 'System';
 
   return (
-    <div className={`subtitle-entry ${speakerClass}`}>
-      {showSpeaker && (
-        <div className="speaker-label">
-          {speaker}
-        </div>
-      )}
-      <div className="subtitle-source">
-        {text}
+    <div className={`subtitle-card ${speakerClass}`}>
+      <div className="card-header">
+        <span className="speaker-badge">
+          {label}
+        </span>
       </div>
-      <div className="subtitle-translation">
-        {translation || <span className="typing-indicator">...</span>}
+      <div className="card-content">
+        <div className="subtitle-translation">
+          {translation || <span className="typing-indicator">Listening...</span>}
+        </div>
+        <div className="subtitle-source">
+          {text}
+        </div>
       </div>
     </div>
   );
