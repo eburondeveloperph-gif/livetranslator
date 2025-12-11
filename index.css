@@ -267,11 +267,29 @@ header .header-right {
   letter-spacing: -0.02em;
 }
 
+/* Speaker Label */
+.speaker-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.2rem;
+  opacity: 0.9;
+}
+
 /* Speaker Colors */
 .speaker-male-1 .subtitle-translation { color: #8ecae6; } /* Light Blue */
+.speaker-male-1 .speaker-label { color: #8ecae6; }
+
 .speaker-male-2 .subtitle-translation { color: #90be6d; } /* Green */
+.speaker-male-2 .speaker-label { color: #90be6d; }
+
 .speaker-female-1 .subtitle-translation { color: #ffb7b2; } /* Melon */
+.speaker-female-1 .speaker-label { color: #ffb7b2; }
+
 .speaker-female-2 .subtitle-translation { color: #f9c74f; } /* Yellow */
+.speaker-female-2 .speaker-label { color: #f9c74f; }
+
 .speaker-default .subtitle-translation { color: #ffffff; }
 
 /* Highlights recent items */

@@ -129,7 +129,7 @@ export function useLiveApi({
 
   // Sync volume enabled state with gain nodes
   useEffect(() => {
-    Object.values(streamersRef.current).forEach(streamer => {
+    Object.values(streamersRef.current).forEach((streamer: AudioStreamer) => {
        streamer.gainNode.gain.value = isVolumeEnabled ? 1 : 0;
     });
   }, [isVolumeEnabled]);
@@ -140,7 +140,7 @@ export function useLiveApi({
     
     // Stop all streamers if main client is interrupted
     const stopAllStreamers = () => {
-      Object.values(streamersRef.current).forEach(s => s.stop());
+      Object.values(streamersRef.current).forEach((s: AudioStreamer) => s.stop());
     };
 
     // Helper to route audio to specific streamer
