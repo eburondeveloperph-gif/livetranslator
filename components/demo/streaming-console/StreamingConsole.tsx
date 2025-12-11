@@ -37,7 +37,7 @@ const SubtitleText = memo(({ text, translation, speaker }: { text: string, trans
       </div>
       <div className="card-content">
         <div className="subtitle-translation">
-          {translation || <span className="typing-indicator">Listening...</span>}
+          {translation || <span className="typing-indicator">Translating...</span>}
         </div>
         <div className="subtitle-source">
           {text}
@@ -87,8 +87,7 @@ export default function StreamingConsole() {
           },
         },
       },
-      // Updated to use empty objects as per latest API spec for default models
-      inputAudioTranscription: {},
+      // Remove inputAudioTranscription to signal no mic input
       outputAudioTranscription: {},
       systemInstruction: systemPrompt, 
     };
