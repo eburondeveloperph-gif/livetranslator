@@ -23,6 +23,25 @@ import {
   registeredWorklets,
 } from './audioworklet-registry';
 
+// Inline worker script to handle precise scheduling even in background tabs
+const schedulerWorkerScript = `
+  let intervalId = null;
+  self.onmessage = function(e) {
+    if (e.data === 'start') {
+      if (!intervalId) {
+        intervalId = setInterval(() => {
+          self.postMessage('tick');
+        }, 50); // Tick every 50ms for high precision
+      }
+    } else if (e.data === 'stop') {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+  };
+`;
+
 export class AudioStreamer {
   private sampleRate: number = 24000;
   private bufferSize: number = 7680;
@@ -30,14 +49,14 @@ export class AudioStreamer {
   public isPlaying: boolean = false;
   private scheduledTime: number = 0;
   private initialBufferTime: number = 0.1;
-  private checkTimeout: number | null = null;
   
   public gainNode: GainNode;
   public source: AudioBufferSourceNode;
   
   private activeSources: Set<AudioBufferSourceNode> = new Set();
   
-  private endOfQueueAudioSource: AudioBufferSourceNode | null = null;
+  // Worker for scheduling
+  private schedulerWorker: Worker | null = null;
 
   // Ambient Pad Components
   private padGain: GainNode | null = null;
@@ -52,6 +71,20 @@ export class AudioStreamer {
     this.source = this.context.createBufferSource();
     this.gainNode.connect(this.context.destination);
     this.addPCM16 = this.addPCM16.bind(this);
+    
+    this.initSchedulerWorker();
+  }
+
+  private initSchedulerWorker() {
+    try {
+      const blob = new Blob([schedulerWorkerScript], { type: 'application/javascript' });
+      this.schedulerWorker = new Worker(URL.createObjectURL(blob));
+      this.schedulerWorker.onmessage = () => {
+        this.scheduleNextBuffer();
+      };
+    } catch (e) {
+      console.error("Failed to initialize scheduler worker", e);
+    }
   }
 
   // Exposed properties for pipelining
@@ -178,10 +211,14 @@ export class AudioStreamer {
     if (!this.isPlaying) {
       this.isPlaying = true;
       this.onPlay(); // Notify listeners that playback has started
+      
       // Reset scheduled time if it fell behind
       if (this.scheduledTime < this.context.currentTime) {
          this.scheduledTime = this.context.currentTime + this.initialBufferTime;
       }
+      
+      // Start the worker scheduler
+      this.schedulerWorker?.postMessage('start');
       this.scheduleNextBuffer();
     }
   }
@@ -218,8 +255,7 @@ export class AudioStreamer {
         this.activeSources.delete(source);
         if (this.activeSources.size === 0 && this.audioQueue.length === 0) {
           // Only stop if we are truly empty
-          this.isPlaying = false;
-          this.onComplete();
+          this.stop();
         }
       };
 
@@ -248,18 +284,12 @@ export class AudioStreamer {
       source.start(startTime);
       this.scheduledTime = startTime + audioBuffer.duration;
     }
-
-    if (this.audioQueue.length > 0 || this.activeSources.size > 0) {
-      this.checkTimeout = window.setTimeout(() => this.scheduleNextBuffer(), 100);
-    }
   }
 
   stop() {
     this.isPlaying = false;
-    if (this.checkTimeout) {
-      clearTimeout(this.checkTimeout);
-      this.checkTimeout = null;
-    }
+    this.schedulerWorker?.postMessage('stop');
+    
     this.audioQueue = [];
     
     this.activeSources.forEach(source => {
@@ -283,10 +313,7 @@ export class AudioStreamer {
 
   complete() {
     this.isPlaying = false;
-    if (this.checkTimeout) {
-      clearTimeout(this.checkTimeout);
-      this.checkTimeout = null;
-    }
+    this.schedulerWorker?.postMessage('stop');
     this.onComplete();
   }
 }
